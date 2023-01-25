@@ -37,7 +37,7 @@ let hexToBase64 s =
           (((byte land 0b0011) lsl 4) lor nextByte)
           :: convert byteStr (i + 2) true
   in
-  let rec intToString c =
+  let intToString c =
     if 0 <= c && c < 26 then Char.chr (c + 65)
     else if 26 <= c && c < 52 then Char.chr (c + 71)
     else if 52 <= c && c < 62 then Char.chr (c - 4)
@@ -51,9 +51,20 @@ let hexToBase64 s =
        (List.map intToString (convert (Bytes.of_string paddedStr) 0 true)))
   ^ String.make paddingNum '='
 
-let main =
-  let base64 =
-    hexToBase64
-      "49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d"
+let xorCombo buf1 buf2 =
+  let rec xor i =
+    if Bytes.length buf1 <= i then []
+    else
+      let buf1Char = int_of_hex (Bytes.get buf1 i) in
+      let buf2Char = int_of_hex (Bytes.get buf2 i) in
+      Printf.sprintf "%1x" (buf1Char lxor buf2Char) :: xor (i + 1)
   in
-  print_endline base64
+  String.concat "" (xor 0)
+
+let main =
+  let base64Given = hexToBase64 "49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d" in
+  let xorGiven = (xorCombo
+       (String.to_bytes "1c0111001f010100061a024b53535009181c")
+       (String.to_bytes "686974207468652062756c6c277320657965")) in
+  Format.printf "1.1 %b\n" (String.equal base64Given "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t");
+  Format.printf "1.2 %b\n" (String.equal xorGiven "746865206b696420646f6e277420706c6179");
